@@ -1,0 +1,21 @@
+---
+services:
+  ddnsup:
+    image: ghcr.io/jcostom/ddnsup:latest
+    container_name: ddnsup
+    volumes:
+      - /var/docks/ddnsup:/config
+    user: 1000:1000
+    environment:
+      - PROVIDER=dme
+      - APIKEY=dns-made-easy-api-key
+      - SECRETKEY=dns-made-easy-secret-key
+      - DMEZONEID=dns-made-easy-zone-id-number
+      - RECORDS=list,of,hostnames,you,are,updating
+      - USETELEGRAM=1
+      - CHATID='Your Telegram Chat ID'
+      - MYTOKEN='Your Telegram Bot Token'
+      - SITENAME='Your Site Identifier'
+      - TZ=America/New_York # or whatever makes sense for you
+    restart: unless-stopped
+    network_mode: bridge
