@@ -1,0 +1,2 @@
+# ddnsup
+Dynamic DNS Updater
