@@ -42,7 +42,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 DEBUG = int(os.getenv('DEBUG', 0))
 
 # --- Globals ---
-VER = '0.2.1'
+VER = '0.3'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -95,7 +95,7 @@ def break_up_records(records: str) -> dict:
     return dict.fromkeys([record.strip() for record in records.split(',')], 'id')  # noqa E501
 
 
-def createHmac(msg: str, key: str) -> str:
+def create_hmac(msg: str, key: str) -> str:
     key = bytes(key, 'UTF-8')
     msg = bytes(msg, 'UTF-8')
     digester = hmac.new(key, msg, hashlib.sha1)
@@ -153,7 +153,7 @@ def create_dme_headers(api_key: str, secret_key: str) -> dict:
         'Content-Type': 'application/json',
         'User-Agent': USER_AGENT,
         'X-dnsme-apiKey': api_key,
-        'X-dnsme-hmac': createHmac(now_str, secret_key),
+        'X-dnsme-hmac': create_hmac(now_str, secret_key),
         'X-dnsme-requestDate': now_str
     }
     return headers
