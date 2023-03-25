@@ -31,6 +31,17 @@ elif PROVIDER == 'dme':
     SECRETKEY = os.getenv('SECRETKEY')
     DMEZONEID = str(os.getenv('DMEZONEID'))
     TTL = os.getenv('TTL', 1800)
+elif PROVIDER == 'dnsomatic':
+    # Required Vars for DNS-O-Matic
+    DOM_USER = os.getenv('DOMUSER')
+    DOM_PASSWD = os.getenv('DOMPASSWD')
+    DOM_WILDCARD = os.getenv('WILDCARD', 'NOCHG')
+    DOM_MX = os.getenv('MX', 'NOCHG')
+    DOM_BACKUPMX = os.getenv('BACKUPMX', 'NOCHG')
+    # (possibly) redefine RECORDS - If you're using DNS-O-Matic and want to
+    # update all services, you don't need to set RECORDS, we'll default to
+    # all.dnsomatic.com, which does all your services.
+    RECORDS = os.getenv('RECORDS', 'all.dnsomatic.com')
 else:
     exit(1)
 
@@ -42,7 +53,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 DEBUG = int(os.getenv('DEBUG', 0))
 
 # --- Globals ---
-VER = '0.3'
+VER = '0.5'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -92,6 +103,8 @@ def break_up_records(records: str) -> dict:
     # Breakup passed list of records, strip any spaces
     # Setup dict to be populated to map record
     # Cloudflare's or DME's record_id value.
+    # For DNS-O-Matic use, we'll never change the
+    # "id" values, as they're irrelevant  # noqa E501
     return dict.fromkeys([record.strip() for record in records.split(',')], 'id')  # noqa E501
 
 
@@ -205,6 +218,20 @@ def send_dme_updates(zone_id: str, api_key: str, secret_key: str,
             asyncio.run(send_notification(notification_text, CHATID, MYTOKEN))
 
 
+def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
+                           mx: str, backupmx: str, records, ip: str) -> None:
+    headers = {'User-Agent': USER_AGENT}
+    for record in records.keys():
+        update_url = f"https://updates.dnsomatic.com/nic/update?hostname={record}&myip={ip}&wildcard={wildcard}&mx={mx}&backmx={backupmx}"  # noqa E501
+        response = requests.get(update_url, headers=headers,
+                                auth=(user, passwd))
+        logger.info(f"DNS-O-Matic Response: {response.text}")
+        if USETELEGRAM:
+            now = strftime("%B %d, %Y at %H:%M")
+            notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
+            asyncio.run(send_notification(notification_text, CHATID, MYTOKEN))
+
+
 def main() -> None:
     my_records = break_up_records(RECORDS)
     if PROVIDER == 'cf':
@@ -215,6 +242,10 @@ def main() -> None:
         my_domain = get_dme_domain_name(DMEZONEID, APIKEY, SECRETKEY)
         for record_name, id in my_records.items():
             my_records[record_name] = get_dme_record_id(DMEZONEID, APIKEY, SECRETKEY, record_name)  # noqa E501
+    elif PROVIDER == 'dnsomatic':
+        # nothing needed here - when dnsomatic is used
+        # the id fields don't matter
+        pass
     else:
         exit(1)
 
@@ -231,6 +262,8 @@ def main() -> None:
                     send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
                 elif PROVIDER == 'dme':
                     send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
+                elif PROVIDER == 'dnsomatic':
+                    send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
                 else:
                     exit(1)
             else:
@@ -244,6 +277,8 @@ def main() -> None:
                 send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
             elif PROVIDER == 'dme':
                 send_dme_updates(DMEZONEID, my_records, current_ip, my_domain, APIKEY, SECRETKEY)  # noqa E501
+            elif PROVIDER == 'dnsomatic':
+                    send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
             else:
                 exit(1)
 
