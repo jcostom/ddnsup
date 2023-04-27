@@ -12,51 +12,14 @@ import telegram
 from time import strftime, gmtime, sleep
 
 # --- To be passed in to container ---
+# Debug is optional, but let's determine if it's on first.
+DEBUG = int(os.getenv('DEBUG', 0))
+
 # Required Vars
 IPADDR_SRC = os.getenv('IPADDR_SRC', 'https://ipv4.icanhazip.com/')
 INTERVAL = int(os.getenv('INTERVAL', 300))
 RECORDS = os.getenv('RECORDS')
 PROVIDER = os.getenv('PROVIDER')
-
-if PROVIDER == 'cf':
-    # Required Vars for Cloudflare
-    APITOKEN = os.getenv('APITOKEN')
-    CFZONEID = str(os.getenv('CFZONEID'))
-    TTL = os.getenv('TTL', 1)
-    # Optional Vars for Cloudflare
-    PROXIED = str(os.getenv('PROXIED', 'false'))
-elif PROVIDER == 'dme':
-    # Required Vars for DNS Made Easy
-    APIKEY = os.getenv('APIKEY')
-    SECRETKEY = os.getenv('SECRETKEY')
-    DMEZONEID = str(os.getenv('DMEZONEID'))
-    TTL = os.getenv('TTL', 1800)
-elif PROVIDER == 'dnsomatic':
-    # Required Vars for DNS-O-Matic
-    DOM_USER = os.getenv('DOMUSER')
-    DOM_PASSWD = os.getenv('DOMPASSWD')
-    DOM_WILDCARD = os.getenv('WILDCARD', 'NOCHG')
-    DOM_MX = os.getenv('MX', 'NOCHG')
-    DOM_BACKUPMX = os.getenv('BACKUPMX', 'NOCHG')
-    # (possibly) redefine RECORDS - If you're using DNS-O-Matic and want to
-    # update all services, you don't need to set RECORDS, we'll default to
-    # all.dnsomatic.com, which does all your services.
-    RECORDS = os.getenv('RECORDS', 'all.dnsomatic.com')
-else:
-    exit(1)
-
-# Optional Vars
-USETELEGRAM = int(os.getenv('USETELEGRAM', 0))
-CHATID = int(os.getenv('CHATID', 0))
-MYTOKEN = os.getenv('MYTOKEN', 'none')
-SITENAME = os.getenv('SITENAME', 'mysite')
-DEBUG = int(os.getenv('DEBUG', 0))
-
-# --- Globals ---
-VER = '0.5.2'
-USER_AGENT = f"ddnsup.py/{VER}"
-IPCACHE = "/config/ip.cache.txt"
-HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
 
 # Setup logger
 logger = logging.getLogger()
@@ -72,6 +35,48 @@ formatter = logging.Formatter('[%(levelname)s] %(asctime)s %(message)s',
                               datefmt='[%d %b %Y %H:%M:%S %Z]')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+
+match PROVIDER:
+    case 'cf':
+        # Required Vars for Cloudflare
+        APITOKEN = os.getenv('APITOKEN')
+        CFZONEID = str(os.getenv('CFZONEID'))
+        TTL = os.getenv('TTL', 1)
+        # Optional Vars for Cloudflare
+        PROXIED = str(os.getenv('PROXIED', 'false'))
+    case 'dme':
+        # Required Vars for DNS Made Easy
+        APIKEY = os.getenv('APIKEY')
+        SECRETKEY = os.getenv('SECRETKEY')
+        DMEZONEID = str(os.getenv('DMEZONEID'))
+        TTL = os.getenv('TTL', 1800)
+    case 'dnsomatic':
+        # Required Vars for DNS-O-Matic
+        DOM_USER = os.getenv('DOMUSER')
+        DOM_PASSWD = os.getenv('DOMPASSWD')
+        DOM_WILDCARD = os.getenv('WILDCARD', 'NOCHG')
+        DOM_MX = os.getenv('MX', 'NOCHG')
+        DOM_BACKUPMX = os.getenv('BACKUPMX', 'NOCHG')
+        # (possibly) redefine RECORDS - If you're using DNS-O-Matic and want to
+        # update all services, you don't need to set RECORDS, we'll default to
+        # all.dnsomatic.com, which does all your services.
+        RECORDS = os.getenv('RECORDS', 'all.dnsomatic.com')
+    case _:
+        logger.debug(f'Error: PROVIDER variable was set to:[{PROVIDER}]. Exiting.')  # noqa E501
+        exit(1)
+
+# Optional Vars
+USETELEGRAM = int(os.getenv('USETELEGRAM', 0))
+CHATID = int(os.getenv('CHATID', 0))
+MYTOKEN = os.getenv('MYTOKEN', 'none')
+SITENAME = os.getenv('SITENAME', 'mysite')
+
+
+# --- Globals ---
+VER = '0.6'
+USER_AGENT = f"ddnsup.py/{VER}"
+IPCACHE = "/config/ip.cache.txt"
+HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
 
 
 def get_current_ip(ip_url: str) -> str:
@@ -234,20 +239,21 @@ def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
 
 def main() -> None:
     my_records = break_up_records(RECORDS)
-    if PROVIDER == 'cf':
-        my_domain = get_cfdns_domain_name(CFZONEID, APITOKEN)
-        for record_name, id in my_records.items():
-            my_records[record_name] = get_cfdns_record_id(CFZONEID, APITOKEN, record_name, my_domain)  # noqa E501
-    elif PROVIDER == 'dme':
-        my_domain = get_dme_domain_name(DMEZONEID, APIKEY, SECRETKEY)
-        for record_name, id in my_records.items():
-            my_records[record_name] = get_dme_record_id(DMEZONEID, APIKEY, SECRETKEY, record_name)  # noqa E501
-    elif PROVIDER == 'dnsomatic':
-        # nothing needed here - when dnsomatic is used
-        # the id fields don't matter
-        pass
-    else:
-        exit(1)
+    match PROVIDER:
+        case 'cf':
+            my_domain = get_cfdns_domain_name(CFZONEID, APITOKEN)
+            for record_name, id in my_records.items():
+                my_records[record_name] = get_cfdns_record_id(CFZONEID, APITOKEN, record_name, my_domain)  # noqa E501
+        case 'dme':
+            my_domain = get_dme_domain_name(DMEZONEID, APIKEY, SECRETKEY)
+            for record_name, id in my_records.items():
+                my_records[record_name] = get_dme_record_id(DMEZONEID, APIKEY, SECRETKEY, record_name)  # noqa E501
+        case 'dnsomatic':
+            # nothing needed here - when dnsomatic is used
+            # the id fields don't matter
+            pass
+        case _:
+            exit(1)
 
     while True:
         current_ip = get_current_ip(IPADDR_SRC)
@@ -258,14 +264,15 @@ def main() -> None:
                 update_cache(current_ip)
                 logger.info(f"IP changed to {current_ip}")
                 # Update DNS & Check Telegram
-                if PROVIDER == 'cf':
-                    send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
-                elif PROVIDER == 'dme':
-                    send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
-                elif PROVIDER == 'dnsomatic':
-                    send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
-                else:
-                    exit(1)
+                match PROVIDER:
+                    case 'cf':
+                        send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
+                    case 'dme':
+                        send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
+                    case 'dnsomatic':
+                        send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
+                    case _:
+                        exit(1)
             else:
                 logger.info('No change in IP, no action taken.')
         else:
@@ -273,14 +280,15 @@ def main() -> None:
             update_cache(current_ip)
             logger.info(f"No cached IP, setting to {current_ip}")
             # Update DNS & Check Telegram
-            if PROVIDER == 'cf':
-                send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
-            elif PROVIDER == 'dme':
-                send_dme_updates(DMEZONEID, my_records, current_ip, my_domain, APIKEY, SECRETKEY)  # noqa E501
-            elif PROVIDER == 'dnsomatic':
+            match PROVIDER:
+                case 'cf':
+                    send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
+                case 'dme':
+                    send_dme_updates(DMEZONEID, my_records, current_ip, my_domain, APIKEY, SECRETKEY)  # noqa E501
+                case 'dnsomatic':
                     send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
-            else:
-                exit(1)
+                case _:
+                    exit(1)
 
         sleep(INTERVAL)
 
