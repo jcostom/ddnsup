@@ -22,19 +22,11 @@ RECORDS = os.getenv('RECORDS')
 PROVIDER = os.getenv('PROVIDER')
 
 # Setup logger
+LOG_LEVEL = 'DEBUG' if DEBUG else 'INFO'
+logging.basicConfig(level=LOG_LEVEL,
+                    format='[%(levelname)s] %(asctime)s %(message)s',
+                    datefmt='[%d %b %Y %H:%M:%S %Z]')
 logger = logging.getLogger()
-ch = logging.StreamHandler()
-if DEBUG:
-    logger.setLevel(logging.DEBUG)
-    ch.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
-    ch.setLevel(logging.INFO)
-
-formatter = logging.Formatter('[%(levelname)s] %(asctime)s %(message)s',
-                              datefmt='[%d %b %Y %H:%M:%S %Z]')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 match PROVIDER:
     case 'cf':
@@ -73,7 +65,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 
 
 # --- Globals ---
-VER = '0.6.1'
+VER = '0.7'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
