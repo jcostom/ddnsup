@@ -65,7 +65,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 
 
 # --- Globals ---
-VER = '0.7.1'
+VER = '0.8'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -276,7 +276,7 @@ def main() -> None:
                 case 'cf':
                     send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
                 case 'dme':
-                    send_dme_updates(DMEZONEID, my_records, current_ip, my_domain, APIKEY, SECRETKEY)  # noqa E501
+                    send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
                 case 'dnsomatic':
                     send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
                 case _:
