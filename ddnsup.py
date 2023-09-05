@@ -65,7 +65,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 
 
 # --- Globals ---
-VER = '0.8.1'
+VER = '0.8.2'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
