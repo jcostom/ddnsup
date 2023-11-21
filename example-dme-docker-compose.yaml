@@ -11,6 +11,7 @@ services:
       - DME_APIKEY=dns-made-easy-api-key
       - DME_SECRETKEY=dns-made-easy-secret-key
       - DME_ZONEID=dns-made-easy-zone-id-number
+      - DME_TTL=1800 # optional
       - RECORDS=list,of,hostnames,you,are,updating
       - USETELEGRAM=1
       - CHATID='Your Telegram Chat ID'

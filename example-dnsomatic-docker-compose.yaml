@@ -10,6 +10,9 @@ services:
       - PROVIDER=dnsomatic
       - DOM_USER=my-username
       - DOM_PASSWD=my-password
+      - DOM_MX=NOCHG # optional
+      - DOM_BACKUPMX=NOCHG # optional
+      - DOM_WILDCARD=NOCHG # optional
       - RECORDS=list,of,hostnames,you,are,updating
       - USETELEGRAM=1
       - CHATID='Your Telegram Chat ID'
