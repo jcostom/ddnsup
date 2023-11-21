@@ -8,8 +8,8 @@ services:
     user: 1000:1000
     environment:
       - PROVIDER=cf
-      - APITOKEN=cloudflare-api-token-goes-here
-      - CFZONEID=cloudflare-zone-id-number
+      - CF_APITOKEN=cloudflare-api-token-goes-here
+      - CF_ZONEID=cloudflare-zone-id-number
       - RECORDS=list,of,hostnames,you,are,updating
       - USETELEGRAM=1
       - CHATID='Your Telegram Chat ID'
