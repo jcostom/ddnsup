@@ -31,24 +31,24 @@ logger = logging.getLogger()
 match PROVIDER:
     case 'cf':
         # Required Vars for Cloudflare
-        APITOKEN = os.getenv('APITOKEN')
-        CFZONEID = str(os.getenv('CFZONEID'))
-        TTL = os.getenv('TTL', 1)
+        CF_APITOKEN = os.getenv('CF_APITOKEN') or os.getenv('APITOKEN')
+        CF_ZONEID = str(os.getenv('CF_ZONEID') or os.getenv('CFZONEID'))
+        CF_TTL = os.getenv('CF_TTL', 1) or os.getenv('TTL', 1)
         # Optional Vars for Cloudflare
-        PROXIED = str(os.getenv('PROXIED', 'false'))
+        CF_PROXIED = str(os.getenv('CF_PROXIED', 'false') or os.getenv('PROXIED', 'false'))  # noqa E501
     case 'dme':
         # Required Vars for DNS Made Easy
-        APIKEY = os.getenv('APIKEY')
-        SECRETKEY = os.getenv('SECRETKEY')
-        DMEZONEID = str(os.getenv('DMEZONEID'))
-        TTL = os.getenv('TTL', 1800)
+        DME_APIKEY = os.getenv('DME_APIKEY') or os.getenv('APIKEY')
+        DME_SECRETKEY = os.getenv('DME_SECRETKEY') or os.getenv('SECRETKEY')
+        DME_ZONEID = str(os.getenv('DME_ZONEID') or os.getenv('DMEZONEID'))
+        DME_TTL = os.getenv('DME_TTL', 1800) or os.getenv('TTL', 1800)
     case 'dnsomatic':
         # Required Vars for DNS-O-Matic
-        DOM_USER = os.getenv('DOMUSER')
-        DOM_PASSWD = os.getenv('DOMPASSWD')
-        DOM_WILDCARD = os.getenv('WILDCARD', 'NOCHG')
-        DOM_MX = os.getenv('MX', 'NOCHG')
-        DOM_BACKUPMX = os.getenv('BACKUPMX', 'NOCHG')
+        DOM_USER = os.getenv('DOM_USER') or os.getenv('DOMUSER')
+        DOM_PASSWD = os.getenv('DOM_PASSWD') or os.getenv('DOMPASSWD')
+        DOM_WILDCARD = os.getenv('DOM_WILDCARD', 'NOCHG') or os.getenv('WILDCARD', 'NOCHG')  # noqa E501
+        DOM_MX = os.getenv('DOM_MX', 'NOCHG') or os.getenv('MX', 'NOCHG')
+        DOM_BACKUPMX = os.getenv('DOM_BACKUPMX', 'NOCHG') or os.getenv('BACKUPMX', 'NOCHG')  # noqa E501
         # (possibly) redefine RECORDS - If you're using DNS-O-Matic and want to
         # update all services, you don't need to set RECORDS, we'll default to
         # all.dnsomatic.com, which does all your services.
@@ -65,7 +65,7 @@ SITENAME = os.getenv('SITENAME', 'mysite')
 
 
 # --- Globals ---
-VER = '0.8.4'
+VER = '0.9'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -142,7 +142,7 @@ def get_cfdns_record_id(zone_id: str, api_token: str, record_name: str,
 def update_cfdns_record(zone_id: str, api_token: str,
                         record: list, ip: str) -> requests.Response:
     url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record[1]}"  # noqa E501
-    data = f'{{"type":"A","name":"{record[0]}","content":"{ip}","ttl":{TTL},"proxied":{PROXIED}}}'  # noqa E501
+    data = f'{{"type":"A","name":"{record[0]}","content":"{ip}","ttl":{CF_TTL},"proxied":{CF_PROXIED}}}'  # noqa E501
     headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}  # noqa E501
     return requests.patch(url, headers=headers, data=data)
 
@@ -199,7 +199,7 @@ def update_dme_record(zone_id: str, record: list, ip: str, api_key: str,
         "value": ip,
         "id": record[1],
         "gtdLocation": "DEFAULT",
-        "ttl": TTL
+        "ttl": DME_TTL
     }
     headers = create_dme_headers(api_key, secret_key)
     return requests.put(url, headers=headers, data=json.dumps(body))
@@ -233,13 +233,13 @@ def main() -> None:
     my_records = break_up_records(RECORDS)
     match PROVIDER:
         case 'cf':
-            my_domain = get_cfdns_domain_name(CFZONEID, APITOKEN)
+            my_domain = get_cfdns_domain_name(CF_ZONEID, CF_APITOKEN)
             for record_name, id in my_records.items():
-                my_records[record_name] = get_cfdns_record_id(CFZONEID, APITOKEN, record_name, my_domain)  # noqa E501
+                my_records[record_name] = get_cfdns_record_id(CF_ZONEID, CF_APITOKEN, record_name, my_domain)  # noqa E501
         case 'dme':
-            my_domain = get_dme_domain_name(DMEZONEID, APIKEY, SECRETKEY)
+            my_domain = get_dme_domain_name(DME_ZONEID, DME_APIKEY, DME_SECRETKEY)  # noqa E501
             for record_name, id in my_records.items():
-                my_records[record_name] = get_dme_record_id(DMEZONEID, APIKEY, SECRETKEY, record_name)  # noqa E501
+                my_records[record_name] = get_dme_record_id(DME_ZONEID, DME_APIKEY, DME_SECRETKEY, record_name)  # noqa E501
         case 'dnsomatic':
             # nothing needed here - when dnsomatic is used
             # the id fields don't matter
@@ -258,9 +258,9 @@ def main() -> None:
                 # Update DNS & Check Telegram
                 match PROVIDER:
                     case 'cf':
-                        send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
+                        send_cfdns_updates(CF_ZONEID, CF_APITOKEN, my_records, current_ip, my_domain)  # noqa E501
                     case 'dme':
-                        send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
+                        send_dme_updates(DME_ZONEID, DME_APIKEY, DME_SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
                     case 'dnsomatic':
                         send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
                     case _:
@@ -274,9 +274,9 @@ def main() -> None:
             # Update DNS & Check Telegram
             match PROVIDER:
                 case 'cf':
-                    send_cfdns_updates(CFZONEID, APITOKEN, my_records, current_ip, my_domain)  # noqa E501
+                    send_cfdns_updates(CF_ZONEID, CF_APITOKEN, my_records, current_ip, my_domain)  # noqa E501
                 case 'dme':
-                    send_dme_updates(DMEZONEID, APIKEY, SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
+                    send_dme_updates(DME_ZONEID, DME_APIKEY, DME_SECRETKEY, my_records, current_ip, my_domain)  # noqa E501
                 case 'dnsomatic':
                     send_dnsomatic_updates(DOM_USER, DOM_PASSWD, DOM_WILDCARD, DOM_MX, DOM_BACKUPMX, my_records, current_ip)  # noqa E501
                 case _:
