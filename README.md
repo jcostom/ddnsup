@@ -73,9 +73,9 @@ docker run -d \
     -e CF_APITOKEN=24681357-abc3-12345-a1234-987654321 \
     -e CF_ZONEID=123456 \
     -e RECORDS=host1,host2 \
-    -e USETELEGRAM=1 \
-    -e CHATID=0 \
-    -e MYTOKEN=1111:1111-aaaa_bbbb.cccc \
+    -e USE_TELEGRAM=1 \
+    -e TELEGRAM_CHATID=0 \
+    -e TELEGRAM_TOKEN=1111:1111-aaaa_bbbb.cccc \
     -e SITENAME='HOME' \
     -e TZ='America/New_York' \
     -e DEBUG=0 \
@@ -95,9 +95,9 @@ docker run -d \
     -e DME_SECRETKEY=123456-ab123-123ab-9876-123456789 \
     -e DME_ZONEID=123456 \
     -e RECORDS=host1,host2 \
-    -e USETELEGRAM=1 \
-    -e CHATID=0 \
-    -e MYTOKEN=1111:1111-aaaa_bbbb.cccc \
+    -e USE_TELEGRAM=1 \
+    -e TELEGRAM_CHATID=0 \
+    -e TELEGRAM_TOKEN=1111:1111-aaaa_bbbb.cccc \
     -e SITENAME='HOME' \
     -e TZ='America/New_York' \
     ghcr.io/jcostom/ddnsup:latest
@@ -115,9 +115,9 @@ docker run -d \
     -e DOM_USER=my-username \
     -e DOM_PASSWD=my-password \
     -e RECORDS=host1,host2 \
-    -e USETELEGRAM=1 \
-    -e CHATID=0 \
-    -e MYTOKEN=1111:1111-aaaa_bbbb.cccc \
+    -e USE_TELEGRAM=1 \
+    -e TELEGRAM_CHATID=0 \
+    -e TELEGRAM_TOKEN=1111:1111-aaaa_bbbb.cccc \
     -e SITENAME='HOME' \
     -e TZ='America/New_York' \
     ghcr.io/jcostom/ddnsup:latest
