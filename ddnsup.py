@@ -57,15 +57,22 @@ match PROVIDER:
         logger.debug(f'Error: PROVIDER variable was set to:[{PROVIDER}]. Exiting.')  # noqa E501
         exit(1)
 
-# Optional Vars
-USETELEGRAM = int(os.getenv('USETELEGRAM', 0))
-CHATID = int(os.getenv('CHATID', 0))
-MYTOKEN = os.getenv('MYTOKEN', 'none')
+# --- Optional Vars ---
+# Telegram
+USE_TELEGRAM = int(os.getenv('USE_TELEGRAM', 0) or os.getenv('USETELEGRAM', 0))  # noqa E501
+TELEGRAM_CHATID = int(os.getenv('TELEGRAM_CHATID', 0) or os.getenv('CHATID', 0))  # noqa E501
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', 'none') or os.getenv('MYTOKEN', 'none')  # noqa E501
+
+# Pushover
+USE_PUSHOVER = int(os.getenv('USE_PUSHOVER', 0) or os.getenv('USEPUSHOVER', 0))  # noqa E501
+PUSHOVER_APP_TOKEN = os.getenv('PUSHOVER_APP_TOKEN')
+PUSHOVER_USER_KEY = os.getenv('PUSHOVER_USER_KEY')
+
+# Common
 SITENAME = os.getenv('SITENAME', 'mysite')
 
-
 # --- Globals ---
-VER = '0.9'
+VER = '1.0'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -90,10 +97,16 @@ def update_cache(ip: str) -> int:
     return 0
 
 
-async def send_notification(msg: str, chat_id: int, token: str) -> None:
+async def send_telegram(msg: str, chat_id: int, token: str) -> None:
     bot = telegram.Bot(token=token)
     await bot.send_message(chat_id=chat_id, text=msg)
     logger.info('Telegram Group Message Sent')
+
+
+def send_pushover(msg: str, token: str, user: str) -> requests.Response:
+    url = "https://api.pushover.net/1/messages.json"
+    data = {"token": token, "user": user, "message": msg}
+    return requests.post(url, data)
 
 
 def break_up_records(records: str) -> dict:
@@ -113,11 +126,10 @@ def create_hmac(msg: str, key: str) -> str:
 
 
 def create_cfdns_headers(api_token: str) -> dict:
-    headers = {
+    return {
         "Authorization": f"Bearer {api_token}",
         "Content-Type": "application/json"
     }
-    return headers
 
 
 def create_cfdns_get_req(url: str, api_token: str) -> requests.Response:
@@ -151,22 +163,25 @@ def send_cfdns_updates(zone_id: str, api_token: str, records: dict,
                        ip: str, domain: str) -> None:
     for record in records.items():
         update_cfdns_record(zone_id, api_token, record, ip)
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_notification(notification_text, CHATID, MYTOKEN))
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
+            now = strftime("%B %d, %Y at %H:%M")
+            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
+            send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
 
 
 def create_dme_headers(api_key: str, secret_key: str) -> dict:
     now_str = strftime(HTTP_DATE_STRING, gmtime())
-    headers = {
+    return {
         'Content-Type': 'application/json',
         'User-Agent': USER_AGENT,
         'X-dnsme-apiKey': api_key,
         'X-dnsme-hmac': create_hmac(now_str, secret_key),
         'X-dnsme-requestDate': now_str
     }
-    return headers
 
 
 def create_dme_get_req(url: str, api_key: str,
@@ -209,10 +224,14 @@ def send_dme_updates(zone_id: str, api_key: str, secret_key: str,
                      records: dict, ip: str, domain: str) -> None:
     for record in records.items():
         update_dme_record(zone_id, record, ip, api_key, secret_key)
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_notification(notification_text, CHATID, MYTOKEN))
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
+            now = strftime("%B %d, %Y at %H:%M")
+            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
+            send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
 
 
 def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
@@ -223,10 +242,14 @@ def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
         response = requests.get(update_url, headers=headers,
                                 auth=(user, passwd))
         logger.info(f"DNS-O-Matic Response: {response.text}")
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_notification(notification_text, CHATID, MYTOKEN))
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
+            now = strftime("%B %d, %Y at %H:%M")
+            notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
+            send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
 
 
 def main() -> None:
