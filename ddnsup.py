@@ -59,21 +59,20 @@ match PROVIDER:
 
 # --- Optional Vars ---
 # Telegram
-USETELEGRAM = int(os.getenv('USETELEGRAM', 0))
-CHATID = int(os.getenv('CHATID', 0))
-MYTOKEN = os.getenv('MYTOKEN', 'none')
+USE_TELEGRAM = int(os.getenv('USE_TELEGRAM', 0) or os.getenv('USETELEGRAM', 0))  # noqa E501
+TELEGRAM_CHATID = int(os.getenv('TELEGRAM_CHATID', 0) or os.getenv('CHATID', 0))  # noqa E501
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', 'none') or os.getenv('MYTOKEN', 'none')  # noqa E501
 
 # Pushover
-USEPUSHOVER = int(os.getenv('USEPUSHOVER', 0))
+USE_PUSHOVER = int(os.getenv('USE_PUSHOVER', 0) or os.getenv('USEPUSHOVER', 0))  # noqa E501
 PUSHOVER_APP_TOKEN = os.getenv('PUSHOVER_APP_TOKEN')
 PUSHOVER_USER_KEY = os.getenv('PUSHOVER_USER_KEY')
 
 # Common
 SITENAME = os.getenv('SITENAME', 'mysite')
 
-
 # --- Globals ---
-VER = '1.0-dev'
+VER = '1.0'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -164,11 +163,11 @@ def send_cfdns_updates(zone_id: str, api_token: str, records: dict,
                        ip: str, domain: str) -> None:
     for record in records.items():
         update_cfdns_record(zone_id, api_token, record, ip)
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_telegram(notification_text, CHATID, MYTOKEN))
-        if USEPUSHOVER:
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
@@ -225,11 +224,11 @@ def send_dme_updates(zone_id: str, api_key: str, secret_key: str,
                      records: dict, ip: str, domain: str) -> None:
     for record in records.items():
         update_dme_record(zone_id, record, ip, api_key, secret_key)
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_telegram(notification_text, CHATID, MYTOKEN))
-        if USEPUSHOVER:
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
@@ -243,11 +242,11 @@ def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
         response = requests.get(update_url, headers=headers,
                                 auth=(user, passwd))
         logger.info(f"DNS-O-Matic Response: {response.text}")
-        if USETELEGRAM:
+        if USE_TELEGRAM:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
-            asyncio.run(send_telegram(notification_text, CHATID, MYTOKEN))
-        if USEPUSHOVER:
+            asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
+        if USE_PUSHOVER:
             now = strftime("%B %d, %Y at %H:%M")
             notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501

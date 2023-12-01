@@ -13,9 +13,9 @@ services:
       - DME_ZONEID=dns-made-easy-zone-id-number
       - DME_TTL=1800 # optional
       - RECORDS=list,of,hostnames,you,are,updating
-      - USETELEGRAM=1
-      - CHATID='Your Telegram Chat ID'
-      - MYTOKEN='Your Telegram Bot Token'
+      - USE_TELEGRAM=1
+      - TELEGRAM_CHATID='Your Telegram Chat ID'
+      - TELEGRAM_TOKEN='Your Telegram Bot Token'
       - SITENAME='Your Site Identifier'
       - TZ=America/New_York # or whatever makes sense for you
     restart: unless-stopped
