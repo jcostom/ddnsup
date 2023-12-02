@@ -68,11 +68,15 @@ USE_PUSHOVER = int(os.getenv('USE_PUSHOVER', 0) or os.getenv('USEPUSHOVER', 0)) 
 PUSHOVER_APP_TOKEN = os.getenv('PUSHOVER_APP_TOKEN')
 PUSHOVER_USER_KEY = os.getenv('PUSHOVER_USER_KEY')
 
+# Pushbullet
+USE_PUSHBULLET = int(os.getenv('USE_PUSHBULLET', 0) or os.getenv('USEPUSHBULLET', 0))  # noqa E501
+PUSHBULLET_APIKEY = os.getenv('PUSHBULLET_APIKEY')
+
 # Common
 SITENAME = os.getenv('SITENAME', 'mysite')
 
 # --- Globals ---
-VER = '1.0'
+VER = '1.1'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
@@ -106,7 +110,18 @@ async def send_telegram(msg: str, chat_id: int, token: str) -> None:
 def send_pushover(msg: str, token: str, user: str) -> requests.Response:
     url = "https://api.pushover.net/1/messages.json"
     data = {"token": token, "user": user, "message": msg}
-    return requests.post(url, data)
+    r = requests.post(url, data)
+    logger.info('Pushover Message Sent')
+    return r
+
+
+def send_pushbullet(msg: str, apikey: str) -> requests.Response:
+    url = "https://api.pushbullet.com/v2/pushes"
+    data = {"type": "note", "body": msg}
+    headers = {"Authorization": f"Bearer {apikey}", "Content-Type": "application/json"}  # noqa E501
+    r = requests.post(url, data=json.dumps(data), headers=headers)
+    logger.info('Pushbullet Message Sent')
+    return r
 
 
 def break_up_records(records: str) -> dict:
@@ -163,14 +178,14 @@ def send_cfdns_updates(zone_id: str, api_token: str, records: dict,
                        ip: str, domain: str) -> None:
     for record in records.items():
         update_cfdns_record(zone_id, api_token, record, ip)
+        now = strftime("%B %d, %Y at %H:%M")
+        notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
         if USE_TELEGRAM:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
         if USE_PUSHOVER:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
+        if USE_PUSHBULLET:
+            send_pushbullet(notification_text, PUSHBULLET_APIKEY)
 
 
 def create_dme_headers(api_key: str, secret_key: str) -> dict:
@@ -224,14 +239,14 @@ def send_dme_updates(zone_id: str, api_key: str, secret_key: str,
                      records: dict, ip: str, domain: str) -> None:
     for record in records.items():
         update_dme_record(zone_id, record, ip, api_key, secret_key)
+        now = strftime("%B %d, %Y at %H:%M")
+        notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
         if USE_TELEGRAM:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
         if USE_PUSHOVER:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record[0]}.{domain} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
+        if USE_PUSHBULLET:
+            send_pushbullet(notification_text, PUSHBULLET_APIKEY)
 
 
 def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
@@ -242,14 +257,14 @@ def send_dnsomatic_updates(user: str, passwd: str, wildcard: str,
         response = requests.get(update_url, headers=headers,
                                 auth=(user, passwd))
         logger.info(f"DNS-O-Matic Response: {response.text}")
+        now = strftime("%B %d, %Y at %H:%M")
+        notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
         if USE_TELEGRAM:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
             asyncio.run(send_telegram(notification_text, TELEGRAM_CHATID, TELEGRAM_TOKEN))  # noqa E501
         if USE_PUSHOVER:
-            now = strftime("%B %d, %Y at %H:%M")
-            notification_text = f"[{SITENAME}] {record} changed on {now}. New IP == {ip}."  # noqa E501
             send_pushover(notification_text, PUSHOVER_APP_TOKEN, PUSHOVER_USER_KEY)  # noqa E501
+        if USE_PUSHBULLET:
+            send_pushbullet(notification_text, PUSHBULLET_APIKEY)
 
 
 def main() -> None:

@@ -8,6 +8,8 @@ As of version 0.9, I've done a considerable amount of variable name changes to m
 
 As of version 1.0, I've continued the variable name changes in the spirit of consistency. Variables you should consider migrating are found below. Also in v1.0, I've introduced support for [Pushover](https://pushover.net/). See below as well. In this release, I changed the Telegram-centric variables, and as before, I maintained compatibility with the pre 1.0 variables. Please see below and consider updating to the new variable names.
 
+Version 1.1 added Pushbullet support as well. If you use Pushbullet, you'll need to register with them, get your app(s) up and running, then setup an API key that you'll use with this. See below for details.
+
 That said, **please** consider updating your method of instantiation (be that CLI, compose, etc.) to the new variable naming convention. At some (yet to be determined) point in the future, I think it would make sense to remove the old variable names. I'm writing this on 27 Nov 2023, but have no immediate plans to execute on this, so you can do it at your leisure.
 
 ## Setting up Pushover
@@ -18,7 +20,15 @@ That said, **please** consider updating your method of instantiation (be that CL
 
 3. Pass the variables USE_PUSHOVER (set this to 1!), PUSHOVER_APP_TOKEN, and PUSHOVER_USER_KEY into the container and magic will happen.
 
-## Variables to consider setting
+## Setting up Pushbullet
+
+1. Sign up for an account at the Pushbullet website.
+
+2. In the Settings > Account page, setup an API key.
+
+3. Pass the variables USE_PUSHBULLET and PUSHBULLET_APIKEY to the container and wait for magic.
+
+## Other variables to consider setting
 
 ### Required Variables
 
