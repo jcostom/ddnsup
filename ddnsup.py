@@ -76,7 +76,7 @@ PUSHBULLET_APIKEY = os.getenv('PUSHBULLET_APIKEY')
 SITENAME = os.getenv('SITENAME', 'mysite')
 
 # --- Globals ---
-VER = '1.1'
+VER = '1.1.1'
 USER_AGENT = f"ddnsup.py/{VER}"
 IPCACHE = "/config/ip.cache.txt"
 HTTP_DATE_STRING = '%a, %d %b %Y %H:%M:%S GMT'
