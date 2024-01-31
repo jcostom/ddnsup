@@ -130,7 +130,7 @@ def send_pushbullet(msg: str, apikey: str) -> requests.Response:
 
 def send_alexa(msg: str, access_code: str) -> requests.Response:
     url = "https://api.notifymyecho.com/v1/NotifyMe"
-    data = {"notification": msg, "accessCode": access_code}
+    data = json.dumps({"notification": msg, "accessCode": access_code})
     r = requests.post(url, data)
     logger.info('Alexa Notification Sent')
     return r
