@@ -28,6 +28,14 @@ That said, **please** consider updating your method of instantiation (be that CL
 
 3. Pass the variables USE_PUSHBULLET and PUSHBULLET_APIKEY to the container and wait for magic.
 
+## Setting up Alexa Notifications
+
+1. Add the "Notify Me" skill to your Alexa account
+
+2. Note the accessCode value from the email you got from the skill.
+
+3. Pass the variables USE_ALEXA and ALEXA_ACCESSCODE to the container, and wait for the glowing ring on your Echo!
+
 ## Other variables to consider setting
 
 ### Required Variables
