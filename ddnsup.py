@@ -184,7 +184,14 @@ def get_cfdns_domain_name(zone_id: str, api_token: str) -> str:
 
 def get_cfdns_record_id(zone_id: str, api_token: str, record_name: str,
                         domain_name: str) -> str:
-    url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}.{domain_name}"  # noqa E501
+    # Bug #24, reported by @Vergenter
+    # Not the most elegant fix, but works. #FIXME - revisit as time permits
+    # First handle case of updating a base "domain.tld" type record
+    url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}"  # noqa E501
+    # Second, if this is a hostname, append the domain.tld
+    # passed in to the function
+    if domain_name != record_name:
+        url += f".{domain_name}"
     r = create_cfdns_get_req(url, api_token)
     return r.json()['result'][0]['id']
 
