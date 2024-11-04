@@ -7,7 +7,7 @@ RUN pip install requests python-telegram-bot
 FROM python:3.13.0-slim-bookworm
 
 ARG TZ=America/New_York
-ARG PYVER=3.12
+ARG PYVER=3.13
 
 VOLUME "/config"
 
