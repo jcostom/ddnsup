@@ -1,10 +1,10 @@
-FROM python:3.13.3-slim-bookworm AS builder
+FROM python:3.13.5-slim-bookworm AS builder
 
 ARG TZ=America/New_York
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt -yq install gcc make
 RUN pip install requests python-telegram-bot
 
-FROM python:3.13.3-slim-bookworm
+FROM python:3.13.5-slim-bookworm
 
 ARG TZ=America/New_York
 ARG PYVER=3.13
